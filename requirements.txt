@@ -1,1 +1,8 @@
 streamlit
+yfinance
+pandas
+langchain 
+langchain_ollama
+matplotlib
+beautifulsoup4
+requests
