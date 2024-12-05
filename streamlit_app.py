@@ -276,7 +276,7 @@ else:
         </div>
         <!-- TradingView Widget END -->
         """
-        st.components.v1.html(tradingview_widget, width=600, height=400)
+        st.components.v1.html(tradingview_widget, width=1000, height=400)
     
         # Display Quarterly Balance Sheet (QBS)
         st.write("### Quarterly Balance Sheet")
