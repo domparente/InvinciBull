@@ -255,39 +255,28 @@ else:
     with tab3:
         company_name = comp_info.get("shortName")
         st.subheader(company_name)
-        st.write("Quarterly Overview")
-        try:
-            data_to_plot = QFS.loc[
-                ["Net Income", "Total Revenue", "Operating Expense"]
-            ]
-            # Transpose the DataFrame to make dates as the index
-            data_to_plot = data_to_plot.T
-    
-            # Drop any columns or rows with NaN values (optional)
-            data_to_plot.dropna(inplace=True)
-    
-            # Plot the QFS data as a bar graph
-            plt.style.use("dark_background")
-            data_to_plot.plot(
-                kind="bar",
-                figsize=(12, 7),
-                color=["#1f77b4", "#ff7f0e", "#2ca02c"],  # Distinct colors for bars
-                edgecolor="white",
-                linewidth=0.5,
-            )
-    
-            # Add labels, title, and legend
-            plt.title("Quarterly Financials Overview", fontsize=16, color="white")
-            plt.xlabel("Quarter", fontsize=12, color="white")
-            plt.ylabel("Amount (in millions)", fontsize=12, color="white")
-            plt.xticks(rotation=45, color="white", fontsize=10)
-            plt.yticks(color="white", fontsize=10)
-            plt.legend(title="Metric", fontsize=10, title_fontsize=12, loc="upper left")
-    
-            # Use st.pyplot to display the plot in Streamlit
-            st.pyplot(plt)
-        except Exception as e:
-            st.write("Quarterly Financial Statements (QFS) data is not available.")
+        #FINANCIALS TRADINGVIEW WIDGET
+        tradingview_widget = f"""
+        <!-- TradingView Widget BEGIN -->
+        <div class="tradingview-widget-container">
+          <div class="tradingview-widget-container__widget"></div>
+          <div class="tradingview-widget-copyright"><a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank"><span class="blue-text">Track all markets on TradingView</span></a></div>
+          <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-financials.js" async>
+          {{
+          "isTransparent": true,
+          "largeChartUrl": "",
+          "displayMode": "regular",
+          "width": 400,
+          "height": 550,
+          "colorTheme": "dark",
+          "symbol": "NASDAQ:AAPL",
+          "locale": "en"
+        }}
+          </script>
+        </div>
+        <!-- TradingView Widget END -->
+        """
+        st.components.v1.html(tradingview_widget, width=600, height=400)
     
         # Display Quarterly Balance Sheet (QBS)
         st.write("### Quarterly Balance Sheet")
