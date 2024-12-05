@@ -200,13 +200,13 @@ else:
                 st.write(summary)
         else:
             st.write("Business summary not available.")
-        ## OFFICERS/EMPLOYEES    
+        #OFFICERS & TITLES    
         c_level = comp_info.get("companyOfficers")
         if c_level:
-            st.subheader("Officers:")
-            for officer in c_level:
-                if 'name' in officer and 'title' in officer:
-                    st.write(f"- **{officer['name']}**: {officer['title']}")
+            with st.expander("Officers"):
+                for officer in c_level:
+                    if 'name' in officer and 'title' in officer:
+                        st.write(f"- **{officer['name']}**: {officer['title']}")
         else:
             st.write("No officers information available.")
     
@@ -234,7 +234,7 @@ else:
               "style": "1",
               "locale": "en",
               "backgroundColor": "rgba(0, 0, 0, 1)",
-              "allow_symbol_change": true,
+              "allow_symbol_change": false,
               "calendar": false,
               "support_host": "https://www.tradingview.com"
             }}
