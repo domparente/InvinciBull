@@ -93,11 +93,11 @@ else:
     QBS = tickerData.quarterly_balancesheet
     #TABS
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
-        "Company", 
+        "Company",
+        "News", 
         "Chart", 
         "Financials", 
-        "Filings", 
-        "AI Overview"])
+        "SEC Filings"])
     #COMPANY
     with tab1:
         # SUMMARY
@@ -214,8 +214,57 @@ else:
         st.subheader("Employees:")
         st.write(f"{FTE:,}" if FTE else "No employee information available.")
     
-    #CHART
+    #NEWS
     with tab2:
+        col1, col2 = st.columns(2)
+        #TRADINGVIEW NEWS WIDGET
+        with col1:
+            tradingview_widget = f"""
+            <!-- TradingView Widget BEGIN -->
+            <div class="tradingview-widget-container">
+            <div class="tradingview-widget-container__widget"></div>
+            <div class="tradingview-widget-copyright"><a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank"><span class="blue-text">Track all markets on TradingView</span></a></div>
+            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-timeline.js" async>
+            {{
+            "feedMode": "symbol",
+            "symbol": "{tickerSymbol}",
+            "isTransparent": true,
+            "displayMode": "regular",
+            "colorTheme": "dark",
+            "height": "1000",
+            "locale": "en"
+            }}
+            </script>
+            </div>
+            <!-- TradingView Widget END -->
+            """
+            # Render the TradingView widget
+            st.components.v1.html(tradingview_widget, width=375, height=1000)
+
+        with col2:
+            tradingview_widget = f"""
+            <!-- TradingView Widget BEGIN -->
+            <div class="tradingview-widget-container">
+            <div class="tradingview-widget-container__widget"></div>
+            <div class="tradingview-widget-copyright"><a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank"><span class="blue-text">Track all markets on TradingView</span></a></div>
+            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-timeline.js" async>
+            {{
+            "feedMode": "market",
+            "market": "stock",
+            "isTransparent": true,
+            "displayMode": "regular",
+            "colorTheme": "dark",
+            "height": "1000",
+            "locale": "en"
+            }}
+            </script>
+            </div>
+            <!-- TradingView Widget END -->
+            """
+            # Render the TradingView widget
+            st.components.v1.html(tradingview_widget, width=375, height=1000)
+    #CHART
+    with tab3:
         company_name = comp_info.get("shortName")
         st.subheader(company_name)
         tradingview_widget = f"""
@@ -247,7 +296,7 @@ else:
         st.components.v1.html(tradingview_widget, width=900, height=900)
         
     #FINANCIALS
-    with tab3:
+    with tab4:
         company_name = comp_info.get("shortName")
         st.subheader(company_name)
         #FINANCIALS TRADINGVIEW WIDGET
@@ -318,7 +367,7 @@ else:
             st.write("Quarterly Financial Statements (QFS) data is not available.")
     
     #FILINGS
-    with tab4:
+    with tab5:
         company_name = comp_info.get("shortName")
         st.subheader(company_name)
         def get_sec_filings(tickerSymbol):
@@ -364,7 +413,7 @@ else:
             st.write(df.to_html(escape=False, index=False), unsafe_allow_html=True)
     
     #AI OVERVIEW
-    with tab5:
+    #with tab5:
         if st.button("Analyze stock"):
             company_name = comp_info.get("shortName")
             st.subheader(company_name)
