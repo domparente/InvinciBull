@@ -249,7 +249,7 @@ else:
             """
     
         # Render the TradingView widget
-        st.components.v1.html(tradingview_widget, width=1000, height=1000)
+        st.components.v1.html(tradingview_widget, width=800, height=800)
         
     #FINANCIALS
     with tab3:
@@ -276,7 +276,7 @@ else:
         </div>
         <!-- TradingView Widget END -->
         """
-        st.components.v1.html(tradingview_widget, width=1000, height=400)
+        st.components.v1.html(tradingview_widget, width=800, height=400)
     
         # Display Quarterly Balance Sheet (QBS)
         st.write("### Quarterly Balance Sheet")
