@@ -186,7 +186,7 @@ else:
                 st.write("Market Cap:", f"${market_cap:,}")
 
             # Format EnterpriseValue in $ with millions or billions
-            EV = comp_info.enterpriseValue
+            EV = comp_info.get("enterpriseValue")
             if EV >= 1_000_000_000:  # Billions
                 st.write("Enterprise Value:", f"${EV / 1_000_000_000:.1f}B")
             elif EV >= 1_000_000:  # Millions
