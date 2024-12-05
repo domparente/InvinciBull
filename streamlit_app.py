@@ -249,7 +249,7 @@ else:
             """
     
         # Render the TradingView widget
-        st.components.v1.html(tradingview_widget, width=800, height=800)
+        st.components.v1.html(tradingview_widget, width=800, height=400)
         
     #FINANCIALS
     with tab3:
