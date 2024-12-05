@@ -225,7 +225,8 @@ else:
               <div class="tradingview-widget-copyright"><a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank"><span class="blue-text">Track all markets on TradingView</span></a></div>
               <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
               {{
-              "autosize": true,
+              "width": "800",
+              "height": "800",
               "symbol": "{tickerSymbol}",
               "interval": "D",
               "timezone": "America/New_York",
