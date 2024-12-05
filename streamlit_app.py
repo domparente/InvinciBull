@@ -222,28 +222,23 @@ else:
         tradingview_widget = f"""
             <!-- TradingView Widget BEGIN -->
             <div class="tradingview-widget-container" style="height:100%;width:100%">
-            <div class="tradingview-widget-container__widget" style="height:calc(100% - 32px);width:100%"></div>
-            <div class="tradingview-widget-copyright"><a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank"><span class="blue-text">Track all markets on TradingView</span></a></div>
-            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
-            {{
-            "width": "1000",
-            "height": "610",
-            "symbol": "{tickerSymbol}",
-            "timezone": "America/New_York",
-            "theme": "dark",
-            "style": "2",
-            "locale": "en",
-            "backgroundColor": "rgba(0, 0, 0, 1)",
-            "gridColor": "rgba(0, 0, 0, 0.06)",
-            "hide_top_toolbar": true,
-            "withdateranges": true,
-            "range": "YTD",
-            "allow_symbol_change": false,
-            "save_image": false,
-            "calendar": false,
-            "support_host": "https://www.tradingview.com"
+              <div class="tradingview-widget-container__widget" style="height:calc(100% - 32px);width:100%"></div>
+              <div class="tradingview-widget-copyright"><a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank"><span class="blue-text">Track all markets on TradingView</span></a></div>
+              <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
+              {{
+              "autosize": true,
+              "symbol": "{tickerSymbol}",
+              "interval": "D",
+              "timezone": "America/New_York",
+              "theme": "dark",
+              "style": "1",
+              "locale": "en",
+              "backgroundColor": "rgba(0, 0, 0, 1)",
+              "allow_symbol_change": true,
+              "calendar": false,
+              "support_host": "https://www.tradingview.com"
             }}
-            </script>
+              </script>
             </div>
             <!-- TradingView Widget END -->
             """
