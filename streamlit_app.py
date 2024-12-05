@@ -226,7 +226,7 @@ else:
               <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
               {{
               "width": "900",
-              "height": "610",
+              "height": "800",
               "symbol": "{tickerSymbol}",
               "interval": "D",
               "timezone": "America/New_York",
