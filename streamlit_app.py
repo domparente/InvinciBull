@@ -225,8 +225,8 @@ else:
               <div class="tradingview-widget-copyright"><a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank"><span class="blue-text">Track all markets on TradingView</span></a></div>
               <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
               {{
-              "width": "800",
-              "height": "800",
+              "width": "900",
+              "height": "610",
               "symbol": "{tickerSymbol}",
               "interval": "D",
               "timezone": "America/New_York",
@@ -244,7 +244,7 @@ else:
             """
     
         # Render the TradingView widget
-        st.components.v1.html(tradingview_widget, width=800, height=400)
+        st.components.v1.html(tradingview_widget, width=940, height=940)
         
     #FINANCIALS
     with tab3:
