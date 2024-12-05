@@ -269,7 +269,7 @@ else:
           "width": 1000,
           "height": 550,
           "colorTheme": "dark",
-          "symbol": "{tickerSymbol",
+          "symbol": "{tickerSymbol}",
           "locale": "en"
         }}
           </script>
