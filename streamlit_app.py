@@ -139,7 +139,7 @@ else:
                 """
     
             # Render the TradingView widget
-            st.components.v1.html(tradingview_widget, width=800, height=800)
+            st.components.v1.html(tradingview_widget, width=450, height=200)
         with col3:
             # Inject CSS to remove underline from links
             st.markdown(
