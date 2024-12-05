@@ -266,10 +266,10 @@ else:
           "isTransparent": true,
           "largeChartUrl": "",
           "displayMode": "regular",
-          "width": 400,
+          "width": 1000,
           "height": 550,
           "colorTheme": "dark",
-          "symbol": "NASDAQ:AAPL",
+          "symbol": "{tickerSymbol",
           "locale": "en"
         }}
           </script>
