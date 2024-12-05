@@ -333,27 +333,6 @@ else:
         except Exception as e:
             st.write("Quarterly Financial Statements (QFS) data is not available.")
     
-        if "Cash Cash Equivalents And Short Term Investments" in QBS.index:
-            total_cash = QBS.loc["Cash Cash Equivalents And Short Term Investments"].iloc[0]
-        if "Total Debt" in QBS.index:
-            total_debt = QBS.loc["Total Debt"].iloc[0]
-        EV = comp_info.get("enterpriseValue")
-    
-        analysis_info = {
-        "Price": main_info.last_price,
-        "S/o": main_info.shares / 1e6,
-        "Mcap": main_info.market_cap / 1e6,
-        "Cash": total_cash / 1e6,
-        "Debt": total_debt / 1e6,
-        "EV": EV / 1e6
-        }
-        analysis_info = {key: round(value, 2) for key, value in analysis_info.items()}
-    
-        result = pd.DataFrame.from_dict(analysis_info, orient="index", columns=["Value"])
-        # Apply styling to change the font size
-        styled_result = result.style.set_properties(**{'font-size': '40pt'})
-        st.write(result)
-        
     #FILINGS
     with tab4:
         company_name = comp_info.get("shortName")
