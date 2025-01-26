@@ -18,6 +18,30 @@ import matplotlib.style as style
 
 st.set_page_config(layout="wide", page_title="InvinciBull")
 st.title("InvinciBull")
+# Calendar Widget in Sidebar
+tradingview_calendar_widget = f"""
+    <!-- TradingView Widget BEGIN -->
+    <div class="tradingview-widget-container">
+    <div class="tradingview-widget-container__widget"></div>
+    <div class="tradingview-widget-copyright"><a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank"><span class="blue-text">Track all markets on TradingView</span></a></div>
+    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-events.js" async>
+    {{
+    "colorTheme": "dark",
+    "isTransparent": false,
+    "width": "200",
+    "height": "500",
+    "locale": "en",
+    "importanceFilter": "0,1",
+    "countryFilter": "us"
+    }}
+    </script>
+    </div>
+    <!-- TradingView Widget END -->
+    """
+
+# Embed in sidebar
+with st.sidebar:
+    components.html(tradingview_calendar_widget, height=600, scrolling=True)
 tickerSymbol = st.text_input("Enter the stock symbol here...", value="AAPL", label_visibility="visible", placeholder="AAPL", max_chars=5).upper()
 st.session_state.tickerSymbol = tickerSymbol
 tickerData = yf.Ticker(tickerSymbol)
@@ -452,28 +476,3 @@ def Futures_page():
 
 pg = st.navigation([st.Page(home_page, title="Home", icon="📈"), st.Page(options_page, title="Options", icon="📊"), st.Page(sentiment_page, title="Sentiment", icon="😰"), st.Page(Futures_page, title="Futures", icon="🔮")], position="sidebar")
 pg.run()
-
-# Calendar Widget in Sidebar
-tradingview_calendar_widget = f"""
-    <!-- TradingView Widget BEGIN -->
-    <div class="tradingview-widget-container">
-    <div class="tradingview-widget-container__widget"></div>
-    <div class="tradingview-widget-copyright"><a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank"><span class="blue-text">Track all markets on TradingView</span></a></div>
-    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-events.js" async>
-    {{
-    "colorTheme": "dark",
-    "isTransparent": false,
-    "width": "200",
-    "height": "500",
-    "locale": "en",
-    "importanceFilter": "0,1",
-    "countryFilter": "us"
-    }}
-    </script>
-    </div>
-    <!-- TradingView Widget END -->
-    """
-
-# Embed in sidebar
-with st.sidebar:
-    components.html(tradingview_calendar_widget, height=600, scrolling=True)
