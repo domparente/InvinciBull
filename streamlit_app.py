@@ -1,108 +1,38 @@
 import streamlit as st
-from streamlit import markdown
-import pandas as pd
+import streamlit.components.v1 as components
 import yfinance as yf
-import matplotlib.pyplot as plt
-import requests
+from datetime import datetime
+from datetime import timedelta
+import plotly.graph_objects as go
+import plotly.express as px
+import pandas as pd
+import nltk
+from nltk.sentiment import SentimentIntensityAnalyzer
+from textblob import TextBlob
+import plotly.express as px
+from urllib.request import Request, urlopen
 from bs4 import BeautifulSoup
-from langchain.chains import LLMChain
-from langchain.prompts import PromptTemplate
-from langchain_ollama import OllamaLLM
-import yaml
-from yaml.loader import SafeLoader
+import requests
+import matplotlib.pyplot as plt
+import matplotlib.style as style
 
-#LAYOUT
-st.set_page_config(layout="centered")
+st.set_page_config(layout="wide", page_title="InvinciBull")
+st.title("InvinciBull")
+tickerSymbol = st.text_input("Enter the stock symbol here...", value="AAPL", label_visibility="visible", placeholder="AAPL", max_chars=5).upper()
+st.session_state.tickerSymbol = tickerSymbol
+tickerData = yf.Ticker(tickerSymbol)
+main_info = tickerData.fast_info
+comp_info = tickerData.info
+news = tickerData.news
 
-#TITLE
-st.title("InvinciBull 1.1")
+# Home
+def home_page():
+    col1, col2, col3 = st.columns(3)
 
-#TICKER TAPE
-tradingview_widget = f"""
-<!-- TradingView Widget BEGIN -->
-<div class="tradingview-widget-container">
-<div class="tradingview-widget-container__widget"></div>
-<div class="tradingview-widget-copyright">
-    <a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank">
-</div>
-<script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
-{{
-    "symbols": [
-        {{ "description": "S&P 500 ETF", "proName": "AMEX:SPY" }},
-        {{ "description": "Nasdaq 100 ETF", "proName": "NASDAQ:QQQ" }},
-        {{ "description": "Russell 2000 ETF", "proName": "AMEX:IWM" }},
-        {{ "description": "Dow Jones ETF", "proName": "AMEX:DIA" }},
-        {{ "description": "Apple Inc.", "proName": "NASDAQ:AAPL" }},
-        {{ "description": "Amazon.com Inc.", "proName": "NASDAQ:AMZN" }},
-        {{ "description": "Alphabet Inc.", "proName": "NASDAQ:GOOG" }},
-        {{ "description": "Microsoft Corp.", "proName": "NASDAQ:MSFT" }},
-        {{ "description": "NVIDIA Corp.", "proName": "NASDAQ:NVDA" }},
-        {{ "description": "Tesla Inc.", "proName": "NASDAQ:TSLA" }}
-    ],
-    "showSymbolLogo": true,
-    "isTransparent": true,
-    "displayMode": "compact",
-    "colorTheme": "dark",
-    "locale": "en"
-}}
-</script>
-</div>
-<!-- TradingView Widget END -->
-"""
-st.components.v1.html(tradingview_widget, width=800, height=75)
-
-#YAHOO
-tickerSymbol = st.text_input("Enter the stock symbol here...", key="custom", label_visibility="visible", placeholder="AAPL", max_chars=5).upper()
-
-# Function to fetch and extract SEC filing text, filtered by type
-def fetch_sec_filing_text(filings, valid_types=["10-Q","10-K", "8-K", "6-K"]):
-    try:
-        # Filter filings by type
-        filtered_filings = [
-            filing for filing in filings if filing["Filing Type"] in valid_types
-        ]
-        if not filtered_filings:
-            return "No relevant SEC filings available."
-
-        # Get the first valid filing link
-        filing_url = filtered_filings[0]["Filing Type"].split('href="')[1].split('"')[0]
-        filing_url = "https://www.sec.gov" + filing_url
-
-        # Fetch the filing content
-        response = requests.get(filing_url)
-        response.raise_for_status()  # Raise an error for bad responses
-        soup = BeautifulSoup(response.content, 'html.parser')
-
-        # Extract meaningful text from the filing (e.g., <div> or <p> tags)
-        paragraphs = soup.find_all('p')  # Extract all paragraph tags
-        text = "\n".join([p.get_text() for p in paragraphs if p.get_text()])
-
-        # Limit the size of the text to avoid overwhelming the AI model
-        return text[:5000]  # Truncate to the first 5000 characters
-    except Exception as e:
-        return f"Error fetching SEC filing: {e}"
-        
-if not tickerSymbol:
-    st.info("Please enter a ticker symbol to fetch stock data.")
-else:
-    # Here you proceed with fetching the data since tickerSymbol is not empty
-    tickerData = yf.Ticker(tickerSymbol)
-    main_info = tickerData.fast_info
-    comp_info = tickerData.info
-    QFS = tickerData.quarterly_financials
-    QBS = tickerData.quarterly_balancesheet
-    #TABS
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
-        "Company",
-        "News", 
-        "Chart", 
-        "Financials", 
-        "SEC Filings"])
-    #COMPANY
-    with tab1:
-        # SUMMARY
+    # Column containing company name, hq, website, and employee count
+    with col1:
         company_name = comp_info.get("shortName")
-        st.header(company_name)
+        st.subheader(company_name)
         # HQ & WEBSITE
         city = comp_info.get("city")
         state = comp_info.get("state")
@@ -112,95 +42,155 @@ else:
         address_parts = [city, state, country]
         address = ", ".join(part for part in address_parts if part)  # Join non-empty parts
         # Display the address and website
-        st.write(address)
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            #MINI CHART 
-            tradingview_widget = f"""
-                <!-- TradingView Widget BEGIN -->
-                <div class="tradingview-widget-container">
-                <div class="tradingview-widget-container__widget"></div>
-                <div class="tradingview-widget-copyright"><a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank"><span class="blue-text">Track all markets on TradingView</span></a></div>
-                <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-                {{
-                "symbol": "{tickerSymbol}",
-                "width": "100%",
-                "height": "100%",
-                "locale": "en",
-                "dateRange": "12M",
-                "colorTheme": "dark",
-                "isTransparent": true,
-                "largeChartUrl": "",
-                "chartOnly": false
-                }}
-                </script>
-                </div>
-                <!-- TradingView Widget END -->
-                """
-    
-            # Render the TradingView widget
-            st.components.v1.html(tradingview_widget, width=450, height=200)
-        with col3:
-            # Inject CSS to remove underline from links
-            st.markdown(
-                """
-                <style>
-                a {
-                    text-decoration: none;
-                }
-                </style>
-                """,
-                unsafe_allow_html=True,
-            )
-    
-            if website:
-                # Remove "https://www." or "http://www." from the URL for display purposes
-                clean_website = website.replace("https://www.", "").replace("http://www.", "").replace("https://", "").replace("http://", "")
-                
-                # Use a link symbol (🔗) with the cleaned website text
-                st.markdown(f"[🔗 {clean_website}]({website})", unsafe_allow_html=True)
-            else:
-                st.write("Website: Not available")
-    
-            # Format price as $ with 2 decimals
-            price = main_info.last_price
-            st.write("Price:", f"${price:,.2f}")
-    
-            # Format shares in millions or billions
-            shares = main_info.shares
-            if shares >= 1_000_000_000:  # Billions
-                st.write("Shares Out:", f"{shares / 1_000_000_000:.1f}B")
-            elif shares >= 1_000_000:  # Millions
-                st.write("Shares Out:", f"{shares / 1_000_000:.1f}M")
-            else:  # Less than a million
-                st.write("Shares Out:", f"{shares:,}")
-    
-            # Format market cap in $ with millions or billions
-            market_cap = main_info.market_cap
-            if market_cap >= 1_000_000_000:  # Billions
-                st.write("Market Cap:", f"${market_cap / 1_000_000_000:.1f}B")
-            elif market_cap >= 1_000_000:  # Millions
-                st.write("Market Cap:", f"${market_cap / 1_000_000:.1f}M")
-            else:  # Less than a million
-                st.write("Market Cap:", f"${market_cap:,}")
+        if website:
+            # Remove "https://www." or "http://www." from the URL for display purposes
+            clean_website = website.replace("https://www.", "").replace("http://www.", "").replace("https://", "").replace("http://", "")
+            
+            # Use a link symbol (🔗) with the cleaned website text
+            st.write(address)
+            st.markdown(f"[🔗 {clean_website}]({website})", unsafe_allow_html=True)
+        else:
+            st.write(address, "Website: Not available")
+        FTE = comp_info.get("fullTimeEmployees")
+        
+        st.write("Employees:", f"{FTE:,}" if FTE else "No employee information available.")
 
-            # Format EnterpriseValue in $ with millions or billions
-            EV = comp_info.get("enterpriseValue")
-            if EV >= 1_000_000_000:  # Billions
-                st.write("Enterprise Value:", f"${EV / 1_000_000_000:.1f}B")
-            elif EV >= 1_000_000:  # Millions
-                st.write("Enterprise Value:", f"${EV / 1_000_000:.1f}M")
-            else:  # Less than a million
-                st.write("Enterprise Value:", f"${EV:,}")
+    # Column containing price, shares, market cap, and enterprise value
+    with col2:
+
+        # Format price as $ with 2 decimals
+        price = main_info.last_price
+        st.write("Price:", f"${price:,.2f}")
+
+        # Format shares in millions or billions
+        shares = main_info.shares
+        if shares >= 1_000_000_000:  # Billions
+            st.write("Shares Out:", f"{shares / 1_000_000_000:.1f}B")
+        elif shares >= 1_000_000:  # Millions
+            st.write("Shares Out:", f"{shares / 1_000_000:.1f}M")
+        else:  # Less than a million
+            st.write("Shares Out:", f"{shares:,}")
+
+        # Format market cap in $ with millions or billions
+        market_cap = main_info.market_cap
+        if market_cap >= 1_000_000_000:  # Billions
+            st.write("Market Cap:", f"${market_cap / 1_000_000_000:.1f}B")
+        elif market_cap >= 1_000_000:  # Millions
+            st.write("Market Cap:", f"${market_cap / 1_000_000:.1f}M")
+        else:  # Less than a million
+            st.write("Market Cap:", f"${market_cap:,}")
+
+        # Format EnterpriseValue in $ with millions or billions
+        EV = comp_info.get("enterpriseValue")
+        if EV >= 1_000_000_000:  # Billions
+            st.write("Enterprise Value:", f"${EV / 1_000_000_000:.1f}B")
+        elif EV >= 1_000_000:  # Millions
+            st.write("Enterprise Value:", f"${EV / 1_000_000:.1f}M")
+        else:  # Less than a million
+            st.write("Enterprise Value:", f"${EV:,}")
+
+    # Column containing performance
+    with col3:
+        def get_price_percentages(tickerData):
+            # Get today's date
+            today = datetime.now().date()
+            # Define the start of the year
+            start_of_year = datetime(today.year, 1, 1).date()
+            
+            # Define dates for 1 month, 6 months, and 1 year ago
+            three_months_ago = today - timedelta(days=90)
+            six_months_ago = today - timedelta(days=180)
+            one_year_ago = today - timedelta(days=365)
+            
+            # Fetch historical data for the required periods
+            data_3mo = tickerData.history(start=three_months_ago, end=today)
+            data_6mo = tickerData.history(start=six_months_ago, end=today)
+            data_ytd = tickerData.history(start=start_of_year, end=today)
+            data_1yr = tickerData.history(start=one_year_ago, end=today)
+            
+            # Current price
+            current_price = tickerData.history(period="1d")['Close'].iloc[0] if not tickerData.history(period="1d").empty else None
+            
+            # Calculate percentage changes
+            performances = {}
+            
+            if current_price is not None:
+                if not data_3mo.empty:
+                    performances["3mo"] = ((current_price - data_3mo['Close'].iloc[0]) / data_3mo['Close'].iloc[0]) * 100
+                else:
+                    performances["3mo"] = None
+                
+                if not data_6mo.empty:
+                    performances["6mo"] = ((current_price - data_6mo['Close'].iloc[0]) / data_6mo['Close'].iloc[0]) * 100
+                else:
+                    performances["6mo"] = None
+                
+                if not data_1yr.empty:
+                    performances["1yr"] = ((current_price - data_1yr['Close'].iloc[0]) / data_1yr['Close'].iloc[0]) * 100
+                else:
+                    performances["1yr"] = None
+                
+                # YTD performance
+                if not data_ytd.empty:
+                    performances["ytd"] = ((current_price - data_ytd['Close'].iloc[0]) / data_ytd['Close'].iloc[0]) * 100
+                else:
+                    performances["ytd"] = None
+            else:
+                performances = {"3mo": None, "6mo": None, "YTD": None, "1yr": None}
+            
+            return performances
+
+        percentages = get_price_percentages(tickerData)
+        st.write(f"3mo: {'{:.2f}%'.format(percentages['3mo']) if percentages['3mo'] is not None else 'Not available'}")
+        st.write(f"6mo: {'{:.2f}%'.format(percentages['6mo']) if percentages['6mo'] is not None else 'Not available'}")
+        st.write(f"YTD: {'{:.2f}%'.format(percentages['ytd']) if percentages['ytd'] is not None else 'Not available'}")
+        st.write(f"1yr: {'{:.2f}%'.format(percentages['1yr']) if percentages['1yr'] is not None else 'Not available'}")
+        
+    tradingview_widget = f"""
+        <!-- TradingView Widget BEGIN -->
+        <div class="tradingview-widget-container" style="height:100%;width:100%">
+        <div class="tradingview-widget-container__widget" style="height:calc(100% - 32px);width:100%"></div>
+        <div class="tradingview-widget-copyright"><a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank"><span class="blue-text">Track all markets on TradingView</span></a></div>
+        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
+        {{
+        "width": "1000",
+        "height": "620",
+        "symbol": "{tickerSymbol}",
+        "timezone": "Etc/UTC",
+        "theme": "dark",
+        "style": "1",
+        "locale": "en",
+        "range": "12M",
+        "hide_side_toolbar": false,
+        "allow_symbol_change": false,
+        "calendar": false,
+        "hide_volume": true,
+        "support_host": "https://www.tradingview.com"
+        }}
+        </script>
+        </div>
+        <!-- TradingView Widget END -->
+        """
+    # Render the TradingView widget
+    st.components.v1.html(tradingview_widget, width=1000, height=620)
+
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+        "About",
+        "Holders",
+        "SEC Filings",
+        "News",
+        "Ratings"
+    ])
+    with tab1:
         # Business Summary
         summary = comp_info.get("longBusinessSummary")
-    
+
         if summary:
-            with st.expander("Business Summary"):
-                st.write(summary)
+            st.write(summary)
         else:
             st.write("Business summary not available.")
-        #OFFICERS & TITLES    
+
+        # OFFICERS & TITLES    
         c_level = comp_info.get("companyOfficers")
         if c_level:
             with st.expander("Officers"):
@@ -210,166 +200,17 @@ else:
         else:
             st.write("No officers information available.")
     
-        FTE = comp_info.get("fullTimeEmployees")
-        st.subheader("Employees:")
-        st.write(f"{FTE:,}" if FTE else "No employee information available.")
-    
-    #NEWS
+    # Holders
     with tab2:
-        col1, col2 = st.columns(2)
-        #TRADINGVIEW NEWS WIDGET
-        with col1:
-            tradingview_widget = f"""
-            <!-- TradingView Widget BEGIN -->
-            <div class="tradingview-widget-container">
-            <div class="tradingview-widget-container__widget"></div>
-            <div class="tradingview-widget-copyright"><a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank"><span class="blue-text">Track all markets on TradingView</span></a></div>
-            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-timeline.js" async>
-            {{
-            "feedMode": "symbol",
-            "symbol": "{tickerSymbol}",
-            "isTransparent": true,
-            "displayMode": "regular",
-            "colorTheme": "dark",
-            "height": "1000",
-            "locale": "en"
-            }}
-            </script>
-            </div>
-            <!-- TradingView Widget END -->
-            """
-            # Render the TradingView widget
-            st.components.v1.html(tradingview_widget, width=375, height=1000)
+        holders = tickerData.major_holders
+        # Plot the holders in a bar chart, but remove institutionsCount and make the y-axis a percentage value
+        if not holders.empty:
+            st.bar_chart(holders.drop("institutionsCount", axis=0))
+        else:
+            st.write("No holders information available.")
 
-        with col2:
-            tradingview_widget = f"""
-            <!-- TradingView Widget BEGIN -->
-            <div class="tradingview-widget-container">
-            <div class="tradingview-widget-container__widget"></div>
-            <div class="tradingview-widget-copyright"><a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank"><span class="blue-text">Track all markets on TradingView</span></a></div>
-            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-timeline.js" async>
-            {{
-            "feedMode": "market",
-            "market": "stock",
-            "isTransparent": true,
-            "displayMode": "regular",
-            "colorTheme": "dark",
-            "height": "1000",
-            "locale": "en"
-            }}
-            </script>
-            </div>
-            <!-- TradingView Widget END -->
-            """
-            # Render the TradingView widget
-            st.components.v1.html(tradingview_widget, width=375, height=1000)
-    #CHART
+    # SEC Filings
     with tab3:
-        company_name = comp_info.get("shortName")
-        st.subheader(company_name)
-        tradingview_widget = f"""
-            <!-- TradingView Widget BEGIN -->
-            <div class="tradingview-widget-container" style="height:100%;width:100%">
-              <div class="tradingview-widget-container__widget" style="height:calc(100% - 32px);width:100%"></div>
-              <div class="tradingview-widget-copyright"><a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank"><span class="blue-text">Track all markets on TradingView</span></a></div>
-              <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
-              {{
-              "width": "900",
-              "height": "800",
-              "symbol": "{tickerSymbol}",
-              "interval": "D",
-              "timezone": "America/New_York",
-              "theme": "dark",
-              "style": "1",
-              "locale": "en",
-              "backgroundColor": "rgba(0, 0, 0, 1)",
-              "allow_symbol_change": false,
-              "calendar": false,
-              "support_host": "https://www.tradingview.com"
-            }}
-              </script>
-            </div>
-            <!-- TradingView Widget END -->
-            """
-    
-        # Render the TradingView widget
-        st.components.v1.html(tradingview_widget, width=900, height=900)
-        
-    #FINANCIALS
-    with tab4:
-        company_name = comp_info.get("shortName")
-        st.subheader(company_name)
-        #FINANCIALS TRADINGVIEW WIDGET
-        tradingview_widget = f"""
-        <!-- TradingView Widget BEGIN -->
-        <div class="tradingview-widget-container">
-          <div class="tradingview-widget-container__widget"></div>
-          <div class="tradingview-widget-copyright"><a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank"><span class="blue-text">Track all markets on TradingView</span></a></div>
-          <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-financials.js" async>
-          {{
-          "isTransparent": true,
-          "largeChartUrl": "",
-          "displayMode": "regular",
-          "width": 1000,
-          "height": 550,
-          "colorTheme": "dark",
-          "symbol": "{tickerSymbol}",
-          "locale": "en"
-        }}
-          </script>
-        </div>
-        <!-- TradingView Widget END -->
-        """
-        st.components.v1.html(tradingview_widget, width=800, height=400)
-    
-        # Display Quarterly Balance Sheet (QBS)
-        st.write("### Quarterly Balance Sheet")
-        try:
-            # Transpose QBS to have quarters as rows
-            qbs_transposed = QBS.T
-    
-            # Format the column headers (dates) as 'Q1YYYY', 'Q2YYYY', etc.
-            quarters = [
-                f"Q{(date.month - 1) // 3 + 1}{date.year}" for date in qbs_transposed.index
-            ]
-            qbs_transposed.index = quarters
-    
-            # Format the values as currency
-            qbs_transposed = qbs_transposed.applymap(
-                lambda x: f"${x:,.2f}" if pd.notnull(x) else "N/A"
-            )
-    
-            # Display the formatted DataFrame
-            st.dataframe(qbs_transposed)
-        except Exception as e:
-            st.write("Quarterly Balance Sheet (QBS) data is not available.")
-    
-        # Display Quarterly Financial Statements (QFS)
-        st.write("### Quarterly Financial Statements")
-        try:
-            # Transpose QFS to have quarters as rows
-            qfs_transposed = QFS.T
-    
-            # Format the column headers (dates) as 'Q1YYYY', 'Q2YYYY', etc.
-            quarters = [
-                f"Q{(date.month - 1) // 3 + 1}{date.year}" for date in qfs_transposed.index
-            ]
-            qfs_transposed.index = quarters
-    
-            # Format the values as currency
-            qfs_transposed = qfs_transposed.applymap(
-                lambda x: f"${x:,.2f}" if pd.notnull(x) else "N/A"
-            )
-    
-            # Display the formatted DataFrame
-            st.dataframe(qfs_transposed)
-        except Exception as e:
-            st.write("Quarterly Financial Statements (QFS) data is not available.")
-    
-    #FILINGS
-    with tab5:
-        company_name = comp_info.get("shortName")
-        st.subheader(company_name)
         def get_sec_filings(tickerSymbol):
             # Construct the SEC URL for the ticker symbol
             sec_url = f"https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={tickerSymbol}&type=&dateb=&owner=include&start=0&count=40"
@@ -411,63 +252,228 @@ else:
             # Display the DataFrame as a table with hyperlinks in Filing Type column
             st.write("Most Recent SEC Filings:")
             st.write(df.to_html(escape=False, index=False), unsafe_allow_html=True)
-    
-    #AI OVERVIEW
-    #with tab5:
-        if st.button("Analyze stock"):
-            company_name = comp_info.get("shortName")
-            st.subheader(company_name)
-            company_info = [company_name, city, state, country, website, summary]
-            st.write("AI Overview")
-    
-            # Initialize the Ollama LLM
-            llm = OllamaLLM(model="llama3.1", api_base="http://localhost:11434")  # Update with your Ollama API URL
-    
-            # Define a prompt template for the AI overview
-            prompt_template = """
-                        Analyze the following financial data for {company_name} and provide insights:
-                            1. Read through: 
-                                Company Info:
-                                {company_info}
-    
-                                SEC Filing Highlights:
-                                {filing_text}
-    
-                                Quarterly Financial Statements (QFS):
-                                {qfs}
-    
-                                Quarterly Balance Sheet (QBS):
-                                {qbs}
-                            2. Key performance indicators (KPIs) (e.g., revenue growth, profit margins, cash flow).
-                            3. Recent stock performance and key drivers behind fluctuations.
-                            4. SWOT analysis (Strengths, Weaknesses, Opportunities, Threats).
-                            5. Future outlook and risks based on current market trends and company trajectory.
-                        Include actionable recommendations for portfolio strategy: Should we buy, sell, or hold? Justify your suggestion based on quantitative and qualitative factors. Provide all insights in a clear, bullet-point format for quick review."
-                    """
-            # LangChain prompt
-            prompt = PromptTemplate(template=prompt_template, input_variables=["company_name", "comp_info", "summary","filing_text", "qfs", "qbs"])
-    
-            # Define the LangChain LLMChain
-            chain = LLMChain(llm=llm, prompt=prompt)
-    
-            # Get the most relevant SEC filing text
-            try:
-                filings = get_sec_filings(tickerSymbol)  # Use the existing function to get filings
-                filing_text = fetch_sec_filing_text(filings, valid_types=["10-K", "8-K", "6-K", "10-Q"])
-            except Exception as e:
-                filing_text = f"Error retrieving SEC filings: {e}"
-                print(filing_text)
-    
-            # Generate the AI overview when the "Analyze stock" button is pressed
-            try:
-                # Convert QFS and QBS to string format for the prompt
-                qfs_summary = QFS.T.to_string() if not QFS.empty else "No data available."
-                qbs_summary = QBS.T.to_string() if not QBS.empty else "No data available."
-    
-                # Generate the AI overview
-                ai_overview = chain.run({"company_name": company_name, "company_info": company_info, "summary": summary, "filing_text": filing_text, "qfs": qfs_summary, "qbs": qbs_summary})
-    
-                # Display the AI overview
-                st.write(ai_overview)
-            except Exception as e:
-                st.write("AI Overview could not be generated. Please check the data or API configuration.")
+
+    # News
+    with tab4:
+        news = tickerData.news
+        
+        if news:
+            for article in news:
+                # Extract the required fields
+                # Assuming 'content' is the correct key for the nested dictionary
+                content = article.get('content', {})
+                
+                title = content.get('title', 'No title available')
+                summary = content.get('summary', 'No summary available')
+                pub_date = content.get('pubDate', 'No publication date available')
+                clickthrough_url = content.get('clickThroughUrl', 'URL not available')
+                
+                # Convert the publication date to a more readable format if it exists
+                if pub_date != 'No publication date available':
+                    pub_date_readable = datetime.strptime(pub_date, '%Y-%m-%dT%H:%M:%SZ').strftime('%Y-%m-%d %H:%M:%S')
+                else:
+                    pub_date_readable = pub_date
+                
+                # Display the cleaned data in Streamlit
+                st.write(f"**Title:** {title}")
+                st.write(f"**Summary:** {summary}")
+                st.write(f"**Date Published:** {pub_date_readable}")
+                st.write(f"**Clickthrough URL:** [{clickthrough_url}]({clickthrough_url})")
+                st.write("---")  # Adds a separator between articles
+        else:
+            st.write("No news articles found.")
+
+    # Ratings
+    with tab5:
+        ratings = tickerData.recommendations
+        # Create a bar chart
+
+        # Set dark theme for matplotlib
+        style.use('dark_background')
+        fig, ax = plt.subplots(figsize=(10, 6), facecolor='none')
+
+        # Number of periods
+        num_periods = len(ratings)
+
+        # Width of each bar
+        bar_width = 0.15
+
+        # Positions of the bars on the x-axis
+        r1 = range(num_periods)
+        r2 = [x + bar_width for x in r1]
+        r3 = [x + 2*bar_width for x in r1]
+        r4 = [x + 3*bar_width for x in r1]
+        r5 = [x + 4*bar_width for x in r1]
+
+        # Plotting each category
+        ax.bar(r1, ratings['strongBuy'], color='green', width=bar_width, label='Strong Buy')
+        ax.bar(r2, ratings['buy'], color='lightgreen', width=bar_width, label='Buy')
+        ax.bar(r3, ratings['hold'], color='yellow', width=bar_width, label='Hold')
+        ax.bar(r4, ratings['sell'], color='orange', width=bar_width, label='Sell')
+        ax.bar(r5, ratings['strongSell'], color='red', width=bar_width, label='Strong Sell')
+
+        # Customizing the plot
+        ax.set_ylabel('Number of Recommendations')
+        ax.set_xlabel('Time Period')
+        ax.set_title('Analyst Recommendations')
+        ax.set_xticks([r + bar_width*2 for r in range(num_periods)])
+        ax.set_xticklabels(ratings['period'])
+        ax.legend()
+
+        # Display the plot in Streamlit
+        st.pyplot(fig)
+
+
+# Options
+def options_page():
+    tickerSymbol = st.session_state.tickerSymbol
+    if tickerSymbol:
+        tickerData = yf.Ticker(tickerSymbol)
+        options = tickerData.option_chain()
+        
+        if options.calls is not None and options.puts is not None:
+            st.write(f"Options for {tickerSymbol}")
+            
+            # Option to switch between DataFrame view and visualizations
+            view_type = st.radio("Choose View Type", ["DataFrames", "Visualizations"])
+            
+            if view_type == "DataFrames":
+                st.dataframe(options.calls)
+                st.dataframe(options.puts)
+            else:
+                # Fetch all expiration dates
+                exp_dates = tickerData.options
+                exp_date = st.selectbox("Select Expiration Date", exp_dates)
+                
+                # Fetch options data for the selected expiration date
+                calls, puts = fetch_options_data(tickerSymbol, exp_date)
+                
+                # Heatmap for Implied Volatility
+                st.subheader("Implied Volatility Heatmap")
+                fig_iv = go.Figure(data=go.Heatmap(
+                    z=calls['impliedVolatility'],
+                    x=calls['strike'],
+                    y=['Call Options'],
+                    colorscale='Viridis',
+                    colorbar=dict(title='Implied Volatility')
+                ))
+                fig_iv.update_layout(title=f'Implied Volatility for {tickerSymbol} - {exp_date}', xaxis_title='Strike Price', yaxis_title='Option Type')
+                st.plotly_chart(fig_iv)
+                
+                # Scatter Plot for Options Pricing
+                st.subheader("Options Pricing Scatter Plot")
+                fig_price = px.scatter(calls, x='strike', y='lastPrice', color='impliedVolatility', 
+                                      hover_data=['contractSymbol', 'volume', 'openInterest'],
+                                      title=f'Options Pricing for {tickerSymbol} - {exp_date}')
+                fig_price.update_xaxes(title='Strike Price')
+                fig_price.update_yaxes(title='Last Price')
+                st.plotly_chart(fig_price)
+                
+                # Bar Chart for Open Interest
+                st.subheader("Open Interest Bar Chart")
+                fig_oi = px.bar(calls, x='strike', y='openInterest', 
+                                title=f'Open Interest for {tickerSymbol} Calls - {exp_date}',
+                                labels={'strike': 'Strike Price', 'openInterest': 'Open Interest'})
+                st.plotly_chart(fig_oi)
+                
+                # Combine Calls and Puts for more comprehensive visualizations
+                options_data = pd.concat([calls.assign(Type='Call'), puts.assign(Type='Put')], ignore_index=True)
+                
+                # Volume vs. Open Interest for Calls and Puts
+                st.subheader("Volume vs. Open Interest")
+                fig_vol_oi = px.scatter(options_data, x='volume', y='openInterest', color='Type', 
+                                       size='impliedVolatility', hover_data=['strike', 'lastPrice'],
+                                       title=f'Volume vs. Open Interest for {tickerSymbol} Options - {exp_date}')
+                fig_vol_oi.update_xaxes(title='Volume')
+                fig_vol_oi.update_yaxes(title='Open Interest')
+                st.plotly_chart(fig_vol_oi)
+        else:
+            st.write("No options data available for this symbol.")
+    else:
+        st.write("Please enter a ticker symbol to view options data.")
+
+def fetch_options_data(ticker, exp_date):
+    stock = yf.Ticker(ticker)
+    options = stock.option_chain(exp_date)
+    return options.calls, options.puts
+
+
+# Sentiment
+def sentiment_page():
+    tickerSymbol = st.session_state.tickerSymbol
+    st.write("Nothing to see here yet")
+
+
+
+# Futures
+def Futures_page():
+    futuresSymbol = st.selectbox("Select Futures Symbol", [
+        "MES1!",
+        "NQ1!",
+        "YM1!",
+        "RTY1!",
+        "VX1!",
+        "NKD1!",
+        "HSI1!",
+        "CL1!",
+        "GC1!",
+        "SI1!",
+        "HG1!",
+        
+    ])
+    futures_chart = f"""
+        <!-- TradingView Widget BEGIN -->
+        <div class="tradingview-widget-container" style="height:100%;width:100%">
+        <div class="tradingview-widget-container__widget" style="height:calc(100% - 32px);width:100%"></div>
+        <div class="tradingview-widget-copyright"><a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank"><span class="blue-text">Track all markets on TradingView</span></a></div>
+        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
+        {{
+        "width": "1000",
+        "height": "620",
+        "symbol": "{futuresSymbol}",
+        "timezone": "Etc/UTC",
+        "theme": "dark",
+        "style": "1",
+        "locale": "en",
+        "range": "12M",
+        "hide_side_toolbar": false,
+        "allow_symbol_change": false,
+        "calendar": false,
+        "hide_volume": true,
+        "support_host": "https://www.tradingview.com"
+        }}
+        </script>
+        </div>
+        <!-- TradingView Widget END -->
+        """
+    # Render the TradingView widget
+    st.components.v1.html(futures_chart, width=1000, height=620)
+
+
+pg = st.navigation([st.Page(home_page, title="Home", icon="📈"), st.Page(options_page, title="Options", icon="📊"), st.Page(sentiment_page, title="Sentiment", icon="😰"), st.Page(Futures_page, title="Futures", icon="🔮")], position="sidebar")
+pg.run()
+
+# Calendar Widget in Sidebar
+tradingview_calendar_widget = f"""
+    <!-- TradingView Widget BEGIN -->
+    <div class="tradingview-widget-container">
+    <div class="tradingview-widget-container__widget"></div>
+    <div class="tradingview-widget-copyright"><a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank"><span class="blue-text">Track all markets on TradingView</span></a></div>
+    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-events.js" async>
+    {{
+    "colorTheme": "dark",
+    "isTransparent": false,
+    "width": "200",
+    "height": "500",
+    "locale": "en",
+    "importanceFilter": "0,1",
+    "countryFilter": "us"
+    }}
+    </script>
+    </div>
+    <!-- TradingView Widget END -->
+    """
+
+# Embed in sidebar
+with st.sidebar:
+    components.html(tradingview_calendar_widget, height=600, scrolling=True)
