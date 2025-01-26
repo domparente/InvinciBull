@@ -6,3 +6,6 @@ langchain_ollama
 matplotlib
 beautifulsoup4
 requests
+plotly
+nltk
+textblob
