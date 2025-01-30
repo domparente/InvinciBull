@@ -463,7 +463,7 @@ tradingview_calendar_widget = f"""
     {{
     "colorTheme": "dark",
     "isTransparent": false,
-    "width": "350",
+    "width": "400",
     "height": "500",
     "locale": "en",
     "importanceFilter": "0,1",
